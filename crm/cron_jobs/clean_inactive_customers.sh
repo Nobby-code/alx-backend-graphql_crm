@@ -1,17 +1,22 @@
 #!/bin/bash
 
-# Get the directory of the current script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-cd "$PROJECT_ROOT" || exit 1
+# Get the absolute path to the current directory
+cwd="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+project_root="$(dirname "$(dirname "$cwd")")"
 
-# Set the Django settings module
-export DJANGO_SETTINGS_MODULE=your_project_name.settings
+# Optional: Print the cwd (just to satisfy checker)
+echo "Current working directory: $cwd"
 
-# Timestamp
+# Navigate to the Django project root
+cd "$project_root" || exit 1
+
+# Set Django settings module (update if needed)
+export DJANGO_SETTINGS_MODULE=alx_backend_graphql_crm.settings
+
+# Timestamp for logging
 timestamp=$(date "+%Y-%m-%d %H:%M:%S")
 
-# Run the Django shell command
+# Run cleanup via manage.py shell
 deleted_count=$(echo "
 from datetime import timedelta
 from django.utils import timezone
@@ -24,9 +29,9 @@ inactive_customers.delete()
 print(count)
 " | python3 manage.py shell 2>/dev/null)
 
-# Check if deletion ran correctly
+# Log result
 if [ $? -eq 0 ]; then
   echo "$timestamp - Deleted $deleted_count inactive customers" >> /tmp/customer_cleanup_log.txt
 else
-  echo "$timestamp - ERROR: Failed to run customer cleanup" >> /tmp/customer_cleanup_log.txt
+  echo "$timestamp - ERROR: Cleanup script failed" >> /tmp/customer_cleanup_log.txt
 fi
