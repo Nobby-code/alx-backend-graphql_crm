@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# Timestamp for logging
+# Get the directory of the current script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+cd "$PROJECT_ROOT" || exit 1
+
+# Set the Django settings module
+export DJANGO_SETTINGS_MODULE=your_project_name.settings
+
+# Timestamp
 timestamp=$(date "+%Y-%m-%d %H:%M:%S")
 
-# Navigate to your Django project directory
-cd "$(dirname "$0")"/../..
-
-# Run Django shell command to delete inactive customers
+# Run the Django shell command
 deleted_count=$(echo "
 from datetime import timedelta
 from django.utils import timezone
@@ -17,7 +22,11 @@ inactive_customers = Customer.objects.filter(order__isnull=True, created_at__lt=
 count = inactive_customers.count()
 inactive_customers.delete()
 print(count)
-" | python3 manage.py shell)
+" | python3 manage.py shell 2>/dev/null)
 
-# Log the result
-echo "$timestamp - Deleted $deleted_count inactive customers" >> /tmp/customer_cleanup_log.txt
+# Check if deletion ran correctly
+if [ $? -eq 0 ]; then
+  echo "$timestamp - Deleted $deleted_count inactive customers" >> /tmp/customer_cleanup_log.txt
+else
+  echo "$timestamp - ERROR: Failed to run customer cleanup" >> /tmp/customer_cleanup_log.txt
+fi
